@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="data:image/vnd.microsoft.icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA25g0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAERAAAAAAAAAREAAAAAAAABEQAAAAAAAAERAAAAAAAAARERERAAAAABEREREAAAAAEREREQAAAAAREAAAAAAAABEQAAAAAAAAEREREQAAAAARERERAAAAABEREREAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAPH/AADx/wAA8f8AAPH/AADwDwAA8A8AAPAPAADx/wAA8f8AAPAPAADwDwAA8A8AAP//AAD//wAA" />
+    <title></title>
+    <script src="https://unpkg.com/lore-engine@1.1.10/dist/lore.min.js"></script>
+    <script src="https://unpkg.com/smiles-drawer@2.1.7/dist/smiles-drawer.min.js"></script>
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.css" 
+      integrity="sha256-piqEf7Ap7CMps8krDQsSOTZgF+MU/0MPyPW2enj5I40=" 
+      crossorigin="anonymous" />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:400,600"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+        height: 100%;
+        user-select: none;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      #lore {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      #title {
+        position: absolute;
+        z-index: 9999;
+        pointer-events: none;
+        text-height: 1;
+        opacity: 0.0;
+        transition: opacity 0.5s ease-in;
+        
+          padding-bottom: 20px;
+        
+          font-size: 1.0em;
+        
+          color: #888888;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #x-axis {
+        position: absolute;
+        z-index: 9999;
+        pointer-events: none;
+        text-height: 1;
+        opacity: 0.0;
+        transition: opacity 0.5s ease-in;
+        
+          padding-top: 20px;
+        
+          font-size: 0.7em;
+        
+          color: #888888;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #y-axis {
+        position: absolute;
+        z-index: 9999;
+        pointer-events: none;
+        text-height: 1;
+        transition: opacity 0.5s ease-in;
+        
+          padding-bottom: 20px;
+        
+          font-size: 0.7em;
+        
+          color: #888888;
+        
+          font-family: 'Open Sans';
+        
+          transform: rotate(-90deg);
+        
+      }
+
+      #tip {
+        position: absolute;
+        z-index: 9999;
+        left: 10px;
+        top: 10px;
+        padding: 5px;
+        font-family: 'Open Sans';
+        background-color: rgba(255, 255, 255, 1.0);
+        border-radius: 2px;
+        border-left: 5px solid #000;
+        pointer-events: none;
+        opacity: 0.0;
+        transition: opacity 0.1s ease-out;
+        filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 1.0));
+      }
+
+      #tip.show {
+        opacity: 1.0;
+        transition: opacity 0.1s ease-out;
+      }
+
+      #tip-text {
+        position: relative;
+        
+        max-width: 250px;
+        
+        font-size: 0.8em;
+        font-weight: bold;
+        white-space: normal;
+        line-break: normal;
+      }
+
+      #hover-indicator {
+        display: none;
+        position: absolute;
+        z-index: 999;
+        border: 1px solid #fff;
+        background-color: rgba(255, 255, 255, 0.25);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      #hover-indicator.show {
+        display: block !important
+      }
+
+      .selected-indicator {
+        position: absolute;
+        z-index: 999;
+        pointer-events: none;
+      }
+
+      .selected-indicator .crosshair-x {
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        height: 2px;
+        width: 100%;
+        margin: auto;
+        
+          background-color: #fff;
+        
+      }
+
+      .selected-indicator .crosshair-y {
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        width: 2px;
+        height: 100%;
+        margin: auto;
+        
+          background-color: #fff;
+        
+      }
+
+      #legend {
+        position: absolute;
+        z-index: 9998;
+        
+          bottom: 10px;
+        
+          right: 10px;
+        
+          padding: 10px;
+        
+          border: 1px solid #262626;
+        
+          border-radius: 2px;
+        
+          background-color: #111111;
+        
+          filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+        
+          color: #eeeeee;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #legend .container {
+        display: flex;
+        flex: auto;
+        align-items: flex-start;
+        
+        flex-direction: column;
+        
+      }
+
+      #legend .legend-section {
+        width: 100%;
+      }
+
+      #legend .legend-section:not(:first-child) {
+        
+      }
+
+      #legend h2 {
+        font-size: 1em;
+        font-weight: 600;
+        padding-top: 0;
+        margin-top: 0;
+        margin-bottom: 5px;
+        text-align: center;
+        max-width: 250px;
+        white-space: normal;
+      }
+
+      #legend h3 {
+        font-size: 0.8em;
+        margin-top: 10px;
+        margin-bottom: 0px;
+        max-width: 250px;
+        white-space: normal;
+      }
+
+      #legend select {
+        width: 100%;
+        margin-bottom: 5px;
+        background: transparent;
+        color: #fff;
+        border-radius: 2px;
+        font-size: 0.75em;
+      }
+
+      #legend select option {
+        background: #000;
+      }
+
+      #legend .legend-element, #legend .legend-element-range {
+        position: relative;
+        display: flex;
+        flex: auto;
+        align-items: flex-start;
+        padding-bottom: 2px;
+        padding-top: 2px;
+      }
+
+      #legend .legend-element {
+        align-items: flex-start;
+      }
+
+      #legend .legend-element-range {
+        flex-direction: column;
+      }
+
+      #legend .color-box {
+        
+          width: 15px;
+        
+          height: 15px;
+        
+          border: solid 0px;
+        
+      }
+
+      #legend .color-stripe {
+        
+          width: 15px;
+        
+          height: 1px;
+        
+          border: solid 0px;
+        
+      }
+
+      #legend .legend-label {
+        height: 15px;
+        font-size: 0.7em;
+        padding-left: 5px;
+      }
+
+      #legend .legend-label.max {
+        position: absolute;
+        top: 0px;
+        margin-left: 15px;
+      }
+
+      #legend .legend-label.min {
+        position: absolute;
+        bottom: 2px;
+        margin-left: 15px;
+      }
+
+      #selected {
+        position: absolute;
+        display: none;
+        z-index: 9998;
+        width: 250px;
+        
+          bottom: 10px;
+        
+          left: 10px;
+        
+          padding: 0px;
+        
+          border: 1px solid #262626;
+        
+          border-radius: 2px;
+        
+          background-color: #111111;
+        
+          filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+        
+          color: #eeeeee;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #selected #selected-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 5px 10px;
+        border-bottom: 1px solid #262626;
+        font-size: 0.8em;
+        font-weight: bold;
+      }
+
+      #selected #selected-controls * {
+        display: inline-block;
+      }
+
+      #selected #selected-controls #selected-title {
+        flex-grow: 1;
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #aaa;
+      }
+
+      #selected #selected-controls a {
+        margin: 0px 2px;
+        font-size: 1.5em;
+        color: #fff;
+        opacity: 0.75;
+        transition: 0.2s;
+      }
+
+      #selected #selected-controls a:hover {
+        opacity: 1.0;
+      }
+
+      #selected #selected-controls a#selected-remove {
+        position: absolute;
+        right: 10px;
+        top: 42px;
+        color: #e74c3c;
+      }
+
+      #selected #selected-container {
+        padding: 10px;
+        font-size: 0.8em;
+      }
+
+      #selected #selected-container img {
+        margin-left: -10px;
+      }
+
+      #selected #selected-container .label {
+        font-weight: bold;
+        color: #aaa;
+        font-size: 0.7em;
+      }
+
+      #selected #selected-container .label:not(:first-child) {
+        margin-top: 2px;
+      }
+
+      #selected #selected-container .content {
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #selected #selected-container .content a {
+        text-decoration: none;
+        color: #3498db;
+      }
+
+      #controls {
+        position: absolute;
+        z-index: 9998;
+        
+          top: 10px;
+        
+          right: 10px;
+        
+          padding: 2px;
+        
+          border: 1px solid #262626;
+        
+          border-radius: 2px;
+        
+          background-color: #111111;
+        
+          filter: drop-shadow(0px 0px 10px rgba(0, 0, 0, 0.5));
+        
+          color: #eeeeee;
+        
+          font-family: 'Open Sans';
+        
+      }
+
+      #controls a {
+        display: inline-block;
+        padding: 5px 10px;
+        font-size: 1.2em;
+        color: #fff;
+        opacity: 0.75;
+        transition: 0.2s;
+      }
+
+      #controls a:hover {
+        opacity: 1.0;
+      }
+
+      #controls #more-controls {
+        display: inline-block;
+      }
+
+      #impress {
+        position: absolute;
+        z-index: 9999;
+        top: 10px;
+        left: 10px;
+        font-size: 0.7em;
+        color: #eee;
+      }
+
+      #impress a {
+        color: #3498db;
+        text-decoration: none;
+      }
+
+      #overlay-structure-container {
+        position: absolute;
+        z-index: 9999;
+        top: 50px;
+        left: 275px;
+        right: 100px;
+        bottom: 10px;
+        opacity: .5;
+        pointer-events: none;
+      }
+
+      #overlay-structure {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: auto;
+        margin-bottom: auto;
+      }
+
+
+
+
+
+      .show {
+        opacity: 1.0 !important;
+      }
+
+      .hide {
+        display: none !important;
+      }
+
+      @media only screen and (max-width: 600px) {
+        #selected {
+          position: absolute;
+          display: none;
+          z-index: 9998;
+          width: 125px;
+          opacity: 0.8;
+          background-filter: blur(10px);
+        }
+
+        #selected img {
+          width: 125px;
+        }
+
+        #tip {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    
+    
+    
+    
+
+    <div id="overlay-structure-container" data-binding-id="overlayStructureContainer" class="">
+      <canvas id="overlay-structure" data-binding-id="overlayStructure" width="450" height="687">
+
+      </canvas></div>
+    </div>
+
+    <div id="tip" data-bind="tip">
+      <div id="tip-text" data-bind="tipText"></div>
+    </div>
+    <div id="selected" data-bind="selected">
+      <div id="selected-controls" data-bind="selectedControls">
+        <a id="selected-toggle" data-bind="selectedToggle" href="#">
+          <i class="fas fa-toggle-on"></i>
+        </a>
+        <span>&nbsp;&nbsp;</span>
+        <span id="selected-title" data-bind="selectedTitle"></span>
+        <span>&nbsp;&nbsp;</span>
+        <span id="selected-current" data-bind="selectedCurrent" data-bind="selectedCurrent">0</span><span> / </span><span id="selected-total" data-bind="selectedTotal">0</span>
+        <span>&nbsp;&nbsp;</span>
+        <a id="selected-prev" data-bind="selectedPrev" href="#">
+          <i class="fas fa-angle-left"></i>
+        </a>
+        <span>&nbsp;</span>
+        <a id="selected-next" data-bind="selectedNext" href="#">
+          <i class="fas fa-angle-right"></i>
+        </a>
+        <a id="selected-remove" data-bind="selectedRemove" href="#">
+          <i class="fas fa-times"></i>
+        </a>
+      </div>
+      <div id="selected-container" data-bind="selectedContainer">
+      </div>
+    </div>
+    <div id="controls" data-bind="controls">
+      <div id="more-controls" data-bind="moreControls" class="hide">
+        <a id="search" data-bind="search" href="#">
+          <i class="fas fa-search"></i>
+        </a>
+        <a id="download" data-bind="download" href="#">
+          <i class="fas fa-download"></i>
+        </a>
+        <a id="export" data-bind="export" href="#">
+          <i class="fas fa-camera"></i>
+        </a>
+        <a id="largepreview" data-bind="largepreview" href="#">
+          <i class="fas fa-expand"></i>
+        </a>
+      </div>
+      <a id="show-controls" data-bind="showControls" href="#">
+        <i class="fas fa-bars"></i>
+      </a>
+    </div>
+    <div id="hover-indicator" data-bind="hoverIndicator"></div>
+    <canvas id="lore"></canvas>
+
+    
+    <script>
+      const data = {
+Skin Reaction: {
+x: [376.415,378.747,513.76,342.216,558.877,416.256,469.706,457.964,678.403,324.418,576.182,506.979,278.289,341.785,462.972,561.321,434.298,444.159,473.65,320.263,396.82,311.852,538.083,283.223,428.807,733.422,447.502,340.265,619.702,392.152,457.301,750.0,385.339,187.489,566.239,191.22,49.948,710.496,617.156,369.044,420.077,489.779,438.202,462.597,229.619,402.005,336.414,499.361,455.743,451.933,287.112,315.093,610.529,733.226,668.556,439.374,285.027,689.764,437.528,449.89,459.474,465.334,253.323,366.971,703.639,447.225,223.482,84.354,220.287,363.311,716.406,545.876,369.561,424.373,413.116,484.23,582.076,0.0,611.927,420.71,134.167,453.978,426.106,487.323,458.853,583.155,459.959,419.679,564.975,103.261,103.288,309.829,269.315,449.273,428.229,702.036,674.464,690.496,582.352,541.914,298.954,434.617,698.241,271.797,458.817,483.065,282.222,421.872,317.427,426.784,471.234,413.125,19.647,419.019,454.148,88.059,95.964,564.285,743.592,112.979,36.278,645.629,415.246,1.375,448.162,333.193,277.859,275.449,87.918,461.238,402.073,242.969,436.309,406.751,279.171,278.653,292.574,95.414,6.463,197.725,99.65,359.097,503.356,255.666,453.939,420.856,414.384,395.814,306.813,457.816,101.907,93.145,96.083,107.377,371.716,621.345,554.531,577.397,467.342,454.28,446.297,409.948,343.919,480.13,446.793,287.615,552.521,446.296,640.853,220.8,45.28,420.439,548.88,644.074,413.615,220.855,586.07,210.331,283.969,293.791,99.905,326.835,462.431,324.674,245.836,414.224,451.522,458.262,235.634,109.042,94.005,81.777,256.812,57.322,215.871,186.606,225.954,234.8,394.086,448.777,644.283,377.189,452.993,91.542,746.812,280.465,665.124,715.052,470.689,187.499,404.392,257.979,376.394,424.007,569.413,337.991,324.459,334.265,464.248,568.521,435.808,213.316,203.748,265.287,436.509,712.556,728.804,721.638,597.894,635.767,609.376,413.939,281.762,413.189,398.812,572.756,278.66,282.383,328.363,446.29,450.487,456.906,246.353,192.927,218.356,237.468,232.366,259.834,279.529,281.776,469.845,276.399,417.673,578.076,430.592,487.012,160.184,264.138,376.101,694.84,615.927,560.751,683.116,483.923,230.084,663.651,362.518,569.425,329.454,524.019,476.098,370.595,449.834,673.64,713.528,489.753,543.414,490.013,519.006,419.881,645.899,161.359,465.269,660.112,163.006,658.518,575.392,565.288,697.513,675.267,645.973,370.499,417.389,419.053,740.807,449.411,389.842,741.454,641.959],
+y: [158.11,254.675,457.846,256.286,367.542,252.196,664.327,525.858,658.725,577.947,50.358,663.843,568.334,251.326,705.935,475.17,187.347,217.523,706.49,567.116,396.007,251.548,466.977,242.652,220.07,695.856,407.118,379.033,348.32,395.866,697.946,693.618,153.171,608.126,482.441,456.981,660.842,302.656,352.791,48.236,156.489,89.611,218.701,530.481,475.246,154.424,255.555,385.49,80.173,743.15,35.466,554.076,355.913,602.725,320.822,284.212,373.28,311.367,153.979,284.037,281.262,279.938,487.034,386.408,305.534,687.926,467.409,658.928,462.213,49.108,684.745,665.849,52.962,216.121,57.17,713.67,477.824,648.365,663.211,161.235,628.373,750.0,415.692,447.187,435.112,51.144,316.912,152.578,472.064,644.38,638.048,539.649,520.561,118.181,705.755,632.415,660.071,644.685,667.927,663.921,374.055,707.437,670.851,244.156,122.181,87.909,534.421,489.06,375.034,490.797,84.806,53.336,649.374,493.66,427.487,704.177,703.031,48.194,694.406,641.66,652.465,661.581,36.79,642.754,749.454,264.795,372.896,526.837,680.667,69.56,568.599,587.648,515.599,575.095,593.468,582.517,46.691,715.788,646.758,460.401,626.317,33.636,383.374,491.893,730.506,715.153,719.086,377.932,249.682,704.554,620.628,624.201,619.636,640.677,43.98,355.654,370.981,663.923,67.862,724.77,632.574,579.464,260.828,350.408,398.59,246.907,361.106,393.161,333.793,533.43,664.222,213.197,356.808,323.755,255.276,90.236,671.306,466.878,513.604,374.055,721.127,583.815,126.845,569.29,583.283,469.771,691.659,64.69,534.326,647.053,722.364,662.502,534.933,656.673,594.778,38.597,85.993,78.184,383.898,417.836,666.238,531.861,416.599,699.938,710.696,545.061,376.85,691.856,657.553,604.201,480.881,56.573,147.747,601.308,487.168,374.377,46.218,378.024,63.131,354.124,521.235,532.983,41.977,516.517,507.03,621.948,606.717,613.32,480.437,366.317,482.412,474.88,249.108,482.328,479.229,40.695,16.299,24.885,269.331,86.843,84.021,709.777,67.137,39.845,44.917,48.479,47.845,52.921,599.736,540.43,652.855,10.989,14.578,36.667,711.731,340.854,615.825,242.866,536.138,308.576,483.543,372.383,380.524,344.934,535.064,371.52,38.841,372.886,47.208,58.19,656.199,160.747,280.267,317.855,696.994,717.802,53.689,69.066,60.392,0.0,318.002,621.497,121.892,380.106,626.114,374.553,375.042,359.249,674.77,378.62,332.834,145.127,19.381,6.543,707.379,517.663,379.106,713.575,658.782],
+z: [375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0],
+labels: ['Nc1ccc(S(N)(=O)=O)cc1','O=C(O)c1ccc2c(c1)C(=O)OC2=O','O=C(O)c1ccccc1O','O=C1OC(=O)c2ccccc21','O=C(OCc1ccccc1)c1ccccc1','O=C(O)c1ccc(O)cc1','O=Cc1ccccc1','C=CC1(C)CC(OC(=O)CO)C2(C)C(C)CCC3(CCC(=O)C32)C(C)C1O','COc1cc(C=O)ccc1O','C=CCCCCCCCCC(=O)O','Clc1nc(Cl)nc(Cl)n1','O=CC=Cc1ccccc1','CCCCCCCCC=CCCCCCCCC(=O)O','O=C1NS(=O)(=O)c2ccccc21','O=C1C=CC(=O)C=C1','Nc1ccccc1O','Oc1cccc(O)c1','N#Cc1c(Cl)c(Cl)c(Cl)c(C#N)c1Cl','BrCc1ccccc1','O=C(O)CCCCC(=O)O','C=CC(=O)OCCCC','O=c1ccc2ccccc2o1','Nc1ccccc1C(=O)O','Sc1nc2ccccc2s1','Oc1ccc(O)cc1','C=CCc1ccc(O)c(OC)c1','Clc1ccccc1','C=C(C)C(=O)OCC(C)O','O=c1[nH]sc2ccccc12','C=CC(=O)OCC(CC)CCCC','O=CCc1ccccc1','C=Cc1ccncc1','Nc1ccc(S(=O)(=O)O)cc1','CCCCCCCCCCCCOS(=O)(=O)O','Oc1cccc2ccccc12','C=C(C)C1CC=C(C)C(=O)C1','CCCCCCCCO','C(=NC1CCCCC1)=NC1CCCCC1','O=C(Oc1ccccc1)c1ccccc1','O=[N+]([O-])c1ccc(Cl)c([N+](=O)[O-])c1','Nc1cccc(N)c1','CN(C)C(=S)SSC(=S)N(C)C','Oc1c(Cl)c(Cl)c(Cl)c(Cl)c1Cl','CC1(C)CC(N)CC(C)(CN)C1','CC(CC=O)CCCC(C)(C)O','Nc1ccc(N)cc1','O=C1CCc2ccccc2O1','CCOC(=O)c1ccc(N)cc1','Cc1cc(N)ccc1N','CC(C)=CCCC(C)=CC=O','CCCN(CCC)c1c([N+](=O)[O-])cc(C(F)(F)F)cc1[N+](=O)[O-]','CCCCCCCC(=O)O','O=C(OOC(=O)c1ccccc1)c1ccccc1','N#CCCC(Br)(C#N)CBr','CC(=O)C1CCCCC1=O','COC(=O)c1ccc(O)cc1','CCCCOCC1CO1','O=C1OC(=O)C2CCCCC12','Nc1cccc(O)c1','CCCOC(=O)c1ccc(O)cc1','CCCOC(=O)c1cc(O)c(O)c(O)c1','CCCCCCCCCCCCOC(=O)c1cc(O)c(O)c(O)c1','CCC(C=O)CC','C=C(C)C(=O)OCCOC(=O)C(=C)C','NC1CCCCC1N','CC1=C(C=O)C(C)(C)CC=C1','CC(CCCCN)C(C)(C)N','CCCCCCCCCCCCCCCCCCBr','NCCCNCCCN','CC=CC(=O)Oc1c(C(C)CCCCCC)cc([N+](=O)[O-])cc1[N+](=O)[O-]','CCCc1ccc(O)c(OC)c1','OCC=Cc1ccccc1','O=[N+]([O-])c1ccc(S(=O)(=O)O)c([N+](=O)[O-])c1','CNc1ccc(O)cc1','Nc1ccc(N)c([N+](=O)[O-])c1','O=[N+]([O-])c1ccc(CBr)cc1','Nc1ccccc1Nc1ccccc1','CCCCCCCCCCCCCCCCCCCl','CC=Cc1ccc(OC)cc1','Nc1ccc(Cl)c(Cl)c1','CCCCCCCCCCCCBr','CC(C)=CCCC(C)=CCO','CCOC(=O)C=CC(=O)OCC','COC(=O)c1ccccc1O','CCOC(=O)c1ccccc1C(=O)OCC','CCNc1nc(Cl)nc(NC(C)C)n1','COC(=O)c1ccc(CBr)cc1','NCc1cccc(CN)c1','Cc1cccc(O)c1O','CCCCCCBr','CCCCCCCCCCCCCCCCBr','CCCCCCCCC(=O)O','CCCCCCCCCCCCCC(=O)OC(C)C','Cc1cc(O)ccc1N','CCC(N)c1ccccc1','COc1ccc(C=O)cc1OC','CCOc1cc(C=O)ccc1O','COc1ccc(C=O)cc1O','COc1ccc(C(C)=O)cc1','CC(=O)C=Cc1ccccc1','CC(C)(c1ccc(OCC2CO2)cc1)c1ccc(OCC2CO2)cc1','CC(C=O)c1ccccc1','COc1cc(C)ccc1O','Cc1cc(=O)n(-c2ccccc2)[nH]1','O=Cc1cc(O)ccc1Br','CN(C)c1ccc(N=O)cc1','CCCCCCCCCCCCCCCC(=O)Cl','CCOC(=O)CC(=O)c1ccccc1','C=C(C)C(=O)OCC(O)COc1ccc(C(C)(C)c2ccc(OCC(O)COC(=O)C(=C)C)cc2)cc1','O=C(CC(=O)C(F)(F)F)c1ccccc1','CCN(CCNS(C)(=O)=O)c1ccc(N)c(C)c1','N#CSc1ccc(N)c([N+](=O)[O-])c1','CCCCCCCCCCCCCCCl','CCOC=C1N=C(c2ccccc2)OC1=O','CCOC(=O)C(C)(C)Oc1ccc(Cl)cc1','CCCCCCCCCCI','CCCCCCI','Clc1ccnc(Cl)n1','C=CCc1ccc(OC)cc1','CCCCCCCCCBr','OCCCCCCCl','CC=Cc1ccc(O)c(OC)c1','Nc1ccc(NCCO)c([N+](=O)[O-])c1','CCCCCCCCCCl','CC(C)=CCCC(C)=CCCC(C)=CC=O','Nc1ccc(N)c2c1C(=O)c1ccccc1C2=O','C(CCCOCC1CO1)CCOCC1CO1','CCCCCCCCC(=O)Cl','CCCCCCCCCCCCCCCCI','Cc1ccc(N)cc1O','CCCCCC(C=O)=Cc1ccccc1','CCC=CC=CC=O','CN1C2CCC1CC(O)C2','CCCCCCC(C=O)=Cc1ccccc1','CCC=CCC=CCC=CCCCCCCCC(=O)O','CCCCCC=CCC=CCCCCCCCC(=O)O','CCOc1cc(Oc2ccc(C(F)(F)F)cc2Cl)ccc1[N+](=O)[O-]','CCCCCCCCCCCCI','CCCCCCCCCCCCCCCCCl','C=C(C)C1CC=C(C=O)CC1','CCCCCCCCCCCCCCBr','O=C(Nc1ccc(Cl)c(Cl)c1)c1cc(Cl)cc(Cl)c1O','CCOC(=O)c1ccc(I)cc1','CCCCCCCCCC(C)C=O','CC(C)CC=C(C=O)c1ccccc1','CC(C=O)Cc1ccc(C(C)C)cc1','CC(C=O)Cc1ccc(C(C)(C)C)cc1','C=CC(=O)OCC(CO)(COC(=O)C=C)COC(=O)C=C','Cc1ccc2oc(=O)ccc2c1','O=c1c(-c2ccccc2)c1-c1ccccc1','CCCCCCCCCCCCCCCCCBr','CCCCCCCCCCCCCCCBr','CCCCCCCCCCCCCBr','CCCCCCCCCCCBr','Nc1cc([N+](=O)[O-])cc(Cl)c1O','CCCOc1cccc(C(=O)O)c1','O=C(C(=O)c1ccco1)c1ccco1','CCC(=O)C=Cc1ccc(OC)cc1','Cc1ccc(NCCO)cc1O','O=CC=C(c1ccccc1)c1ccccc1','CC(C=O)=Cc1ccccc1','CCCCCCCCCCCCCC[N+](C)(C)Cc1ccccc1','CCC=C1OC(=O)c2ccccc21','CCOC(=O)c1ccc(CBr)cc1','Clc1ccccc1C(c1ccccc1)(c1ccccc1)n1ccnc1','Cc1nc2ccccc2c(=O)o1','CC1(C)SC2C(NC(=O)Cc3ccccc3)C(=O)N2C1C(=O)O','CN(C)CCOC(C)(c1ccccc1)c1ccc(Br)cc1','CC(=O)C(=O)c1ccccc1','CC(C)(C)C(=O)CC(=O)C(C)(C)C','CCN(CC)CCCCCCO','CNc1cccc(NC)c1','O=C(NCNC(=O)NC1C(=O)NC(=O)N1CO)NC1C(=O)NC(=O)N1CO','CC(=O)C(C)C(=O)c1ccccc1','O=C(O)Cc1ccc(C(=O)O)cc1','CC(=O)CCCN1C(=O)c2ccccc2C1=O','COc1ccc(NC(=O)CC(C)=O)cc1','CC(C)(O)CCCC1=CCC(C=O)CC1','CCCCCCCCCCCCC(Br)C(=O)O','CC(C)(C)c1ccc(OCC2CO2)cc1','CCCCCCCCCI','C=CCCCCCCCCC=O','O=C1OC2(c3ccc(O)cc3Oc3cc(O)ccc32)c2ccc(N=C=S)cc21','O=C(O)CCCCCCCCCCCBr','CCCCCCCC=CC=O','CC(=O)CC(=O)c1cc(C)ccc1C','Cc1ccc(CCC=O)cc1','Nc1ccc(OCCO)c(N)c1','CC(CC(=O)Cl)CC(C)(C)C','CCCCCCCCCCCCCCCCCCCCBr','CCCCCCCCCCCCCCCCCCI','CCCCCCCCCCCCCCCCCCCCCCBr','CC(C)CCCCCC(=O)Cl','OCCCCCCCCCCCCBr','CCCCCCCCC=CCCCCCCCCOS(C)(=O)=O','COc1cc(N)c2nccc(C)c2c1','CC(Br)CCCN1C(=O)c2ccccc2C1=O','CC(I)CCCN1C(=O)c2ccccc2C1=O','C=CC(=O)OCC(CC)(COC(=O)C=C)COC(=O)C=C','CCC(=O)c1cccc(Cl)c1','CC=Cc1ccc(O)c(OC)c1C','CCCCCC(=O)CC(=O)c1ccccc1','O=C(Cl)c1ccc(F)c(Cl)c1','CCCCCCCCCCCCCCI','C=CCc1cc(OC)c(O)cc1C','CCCCNC(=O)OC#CCI','CCOC(=O)C(=NOC(C)(C)C(=O)OC(C)(C)C)c1csc(NC(c2ccccc2)(c2ccccc2)c2ccccc2)n1','CCCc1ccc(OC)c(O)c1','O=Cc1ccc(-c2ccc(C(F)(F)F)cc2)cc1','CCCCCCCCCCCCOS(C)(=O)=O','CCOC(=O)CC(=O)c1cc(F)c(Cl)nc1Cl','COc1cc(C)c2c(Oc3cccc(C(F)(F)F)c3)c(OC)cc(N)c2n1','O=S(=O)(Cl)c1ccc2c(c1)OCO2','CCCCC(C=O)=Cc1ccccc1','ClCc1ccc2ccc3cccc4ccc1c2c34','CC(=O)C(=O)CC(C)C','Fc1ccc(Oc2ccnc3cc(Cl)cc(Cl)c23)cc1','CCC(O)C(CO)CO','Cc1ccc(N)cc1S(N)(=O)=O','CC(C)(C)N(Cc1ccccc1)CC(O)c1ccc(O)c(CO)c1','CN1C2CCC1CC(OS(C)(=O)=O)C2','COc1cc(C(=O)CC(=O)C(C)(C)C)cc(OC)c1OC','COc1ccc2nc(Cl)cc(C)c2c1','CCCCCCCCCCCC(=O)OC(C)C(=O)OC(C)C(=O)O','CCOC(=O)CC1CC2CCC(C1)N2C','COc1ccc(C2(C#N)CCC(=O)CC2)cc1OC1CCCC1','COC(=O)CCC(C#N)(CCC(=O)OC)c1ccc(OC)c(OC2CCCC2)c1','COc1ccc(C2(C#N)CCC(C(=O)O)CC2)cc1OC1CCCC1','CC(C)N(C(=O)CNc1ccccc1Nc1ccccc1)c1ccccc1','CC(C)(C)OC(=O)c1cccc(N)c1','CC(C)N(C(=O)CN1C(=O)C(N)C(=O)N(c2ccccc2)c2ccccc21)c1ccccc1','CC(=O)CC(=O)c1cc(C)c(C)c(C)c1C','O=C(O)c1c(O)c(-c2ccccc2)nc2ccccc12','CCOC(=O)CC(=O)c1cc(C)c(C)c(C)c1C','CON=C1CN(c2nc3c(cc2F)c(=O)c(C(=O)O)cn3C2CC2)CC1CN','Clc1ncnc2ccc(I)cc12','COc1cc2c(cc1C(F)(F)F)NCC2','COc1cc(CC#N)c([N+](=O)[O-])cc1C(F)(F)F','C=C1CC(C)(C)OC1=O','Nc1cc(F)cc(-c2cccnc2)c1','Cc1ncccc1Oc1ccc(N)cn1','CC1C(c2ccccc2)NC(=O)N1C','COc1cc(C)c2c(Oc3cccc(C(F)(F)F)c3)c(OC)cc(NC(C)CCCN3C(=O)c4ccccc4C3=O)c2n1','COc1ccc2[nH]c(=O)cc(C)c2c1','COc1cc(C)c2c(Cl)c(OC)ccc2n1','COc1cc(C)c2c(Cl)c(OC)cc([N+](=O)[O-])c2n1','COc1cc([N+](=O)[O-])c2[nH]c(=O)cc(C)c2c1Cl','COc1cc(C)c2c(Oc3cccc(C(F)(F)F)c3)c(OC)cc([N+](=O)[O-])c2n1','CCC=CCCCCC=O','CCCCCCC#CC(=O)OC','CNC(C)c1cc(C(F)(F)F)cc(C(F)(F)F)c1','Cc1cc2c(cc1C(F)(F)F)NCC2','NCC1OC(OC2C(N)CC(N)C(OC3OC(CO)C(O)C(N)C3O)C2O)C(O)C(O)C1O','O=c1[nH]cnc2ccc(I)cc12','O=CNc1cc(C(O)CBr)ccc1OCc1ccccc1','CCOc1ccc(-c2nn3ncccc3c2-c2ccc(S(C)(=O)=O)cc2)cc1','CCCCCCCCCCCCS(=O)(=O)OC','Cc1cc(=O)n(-c2ccc(C)c(C)c2)[nH]1','CCCCN1CCC(CNC(=O)c2c3n(c4ccccc24)CCCO3)CC1','CCC(C)(C)C1CCC(CC=O)CC1','CC(C)N(C(=O)Cn1c(=O)c(=NOCc2ccccc2)c(=O)n(-c2ccccc2)c2ccccc21)c1ccccc1','O=C(O)C(=NOCc1ccccc1)C(=O)O','CC(C)(C)OC(=O)N1CC(F)CC1C(=O)O','CCOc1ccc(C(=O)Cc2ccc(S(C)(=O)=O)cc2)cc1','CC(CC(=O)Oc1ccc(S(=O)(=O)O)cc1)CC(C)(C)C','CC(=O)c1ccc(Cc2ccc(F)cc2)o1','O=C(O)c1cccc(-c2cc(Cl)cc([N+](=O)[O-])c2O)c1','Cc1cc(F)ccc1C1CC(=O)C=CN1C(=O)OCc1ccccc1','O=[N+]([O-])c1ccc(OCc2cccc(F)c2)c(Cl)c1','Cc1ccc(Nc2nccc(N(C)c3ccc4c(C)n(C)nc4c3)n2)cc1S(N)(=O)=O','CCN(CC)CCN(Cc1ccc(-c2ccc(C(F)(F)F)cc2)cc1)C(=O)Cn1c(SCc2ccc(F)cc2)nc(=O)c2c1CCC2','NS(=O)(=O)c1cccc(CCCCOCCCCCCBr)c1','CCOC(=O)C(Cc1ccc(O)cc1)NC(=O)OC(C)(C)C','O=c1[nH]c(=S)[nH]c2c1CCC2','COc1ccc(Nc2ccc(CCNCC(O)c3ccc(O)c4[nH]c(=O)ccc34)cc2)cc1-c1ccccc1','O=C(Oc1ccc([N+](=O)[O-])cc1)OC1COC2OCCC12','Cc1c2ccc(Nc3ccnc(Cl)n3)cc2nn1C','Cc1c2ccc(N)cc2nn1C','Cc1c2ccc(N(C)c3ccnc(Cl)n3)cc2nn1C','CCC1OC(=O)C(C)C(OC2CC(C)(OC)C(O)C(C)O2)C(C)C(OC2OC(C)CC(N(C)C)C2O)C(C)(O)CC(C)CN(C)C(C)C(O)C1(C)O','CC(C)C1=CC2=CCC3C(C)(C(=O)O)CCCC3(C)C2CC1','CCCCCCCCCCCCCCCC1=NC(C)(C)C(=O)O1','O=Cc1cc(O)ccc1C=C(CC(=O)O)C(=O)O','N#CC1CC(F)CN1C(=O)C(N)C(c1ccc(F)cc1)c1ccc(F)cc1','CCCCCn1c(=O)[nH]c(=O)c2[nH]c(Cl)nc21','CC(C)(C)OC(=O)NC(C(=O)O)C(c1ccc(F)cc1)c1ccc(F)cc1','CC(C)(CC1Cc2ccccc2C1)NCC(O)COc1cc(CCC(=O)O)cc(F)c1F','CC(C)(C)N(CC(=O)c1ccc(O)c(CO)c1)Cc1ccccc1','COC1=CC=C2C3Cc4ccc(O)c5c4C2(CCN3C)C1O5','CC(C)(C)OC(=O)N1CC(F)CC1C(N)=O','O=C(C(=O)c1ccccc1)C1=CCC(Br)(Br)C=C1','Cc1nc(COc2ccc(CC(NC(=O)OC3COC4OCCC34)C(O)CN(CC(C)C)S(=O)(=O)c3ccc4c(c3)OCO4)cc2)cs1','CNC1C(OC2C(OC3C(O)C(O)C(NC(=N)N)C(O)C3NC(=N)N)OC(C)C2(O)C=O)OC(CO)C(O)C1O','CCC1OC(=O)C(C)C(OC2CC(C)(OC)C(O)C(C)O2)C(C)C(OC2OC(C)CC(N(C)C)C2O)C(C)(OC)CC(C)C(=O)C(C)C(O)C1(C)O','C=CCc1cc(C)c(O)c(OC)c1','C=CC1(C)CC(OC(=O)CSC2CC3CCC(C2)N3C)C2(C)C(C)CCC3(CCC(=O)C32)C(C)C1O','C=CC(C)(O)CCC=C(C)C=O','C=CCc1cc(C)c(OC)c(O)c1','CC=Cc1cc(C)c(O)c(OC)c1'],
+colors: [
+{
+r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,26,26,26,26,26,26,26,31,31,31,31,31,31,31,31,36,36,36,36,41,41,41,47,57,57,62,67,78,78,78,83,83,83,88,88,88,94,94,104,104,104,104,104,109,109,109,114,114,114,114,120,120,120,120,120,120,120,125,125,125,125,125,125,125,125,125,125,130,130,130,135,141,141,141,141,141,141,146,146,146,146,146,151,151,151,151,151,151,156,156,156,156,156,156,161,161,161,161,167,167,172,177,177,177,182,188,193,193,198,198,214,224,245,250],
+g: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,250,250,250,250,250,250,250,250,250,250,250,250,250,250,250,245,245,245,245,245,245,245,245,245,245,245,245,245,245,245,245,245,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,240,235,235,235,235,235,235,235,235,235,235,235,235,235,235,235,235,235,229,229,229,229,229,229,229,224,224,224,224,224,224,224,224,219,219,219,219,214,214,214,208,198,198,193,188,177,177,177,172,172,172,167,167,167,161,161,151,151,151,151,151,146,146,146,141,141,141,141,135,135,135,135,135,135,135,130,130,130,130,130,130,130,130,130,130,125,125,125,120,114,114,114,114,114,114,109,109,109,109,109,104,104,104,104,104,104,99,99,99,99,99,99,94,94,94,94,88,88,83,78,78,78,73,67,62,62,57,57,41,31,10,5],
+b: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
+},
+{
+r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,224,245,250],
+g: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,31,10,5],
+b: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255],
+},
+{
+r: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
+g: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,255,255,0,0,0,0,255,0,255,255,0,255,255,0,0,255,255,255,0,255,255,0,255,0,0,0,0,255,0,0,0,255,255,255,255,0,0,0,0,0,255,255,255,255,255,255,0,0,255,0,255,255,255,255,0,255,0,255,0,255,0,255,255,255,255,0,255,255,255,0,0,0,0,255,0,255,255,0,0,255,0,255,255,255,0,255,0,0,0],
+b: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,255,255,0,0,0,0,255,0,255,255,0,255,255,0,0,255,255,255,0,255,255,0,255,0,0,0,0,255,0,0,0,255,255,255,255,0,0,0,0,0,255,255,255,255,255,255,0,0,255,0,255,255,255,255,0,255,0,255,0,255,0,255,255,255,255,0,255,255,255,0,0,0,0,255,0,255,255,0,0,255,0,255,255,255,0,255,0,0,0],
+},
+{
+r: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
+g: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,255,255,0,0,0,0,255,0,255,255,0,255,255,0,0,255,255,255,0,255,255,0,255,0,0,0,0,255,0,0,0,255,255,255,255,0,0,0,0,0,255,255,255,255,255,255,0,0,255,0,255,255,255,255,0,255,0,255,0,255,0,255,255,255,255,0,255,255,255,0,0,0,0,255,0,255,255,0,0,255,0,255,255,255,0,255,0,0,0],
+b: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,255,255,0,0,0,0,255,0,255,255,0,255,255,0,0,255,255,255,0,255,255,0,255,0,0,0,0,255,0,0,0,255,255,255,255,0,0,0,0,0,255,255,255,255,255,255,0,0,255,0,255,255,255,255,0,255,0,255,0,255,0,255,255,255,255,0,255,255,255,0,0,0,0,255,0,255,255,0,0,255,0,255,255,255,0,255,0,0,0],
+},
+{
+r: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
+g: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,255,255,0,0,0,0,255,0,255,255,0,255,255,0,0,255,255,255,0,255,255,0,255,0,0,0,0,255,0,0,0,255,255,255,255,0,0,0,0,0,255,255,255,255,255,255,0,0,255,0,255,255,255,255,0,255,0,255,0,255,0,255,255,255,255,0,255,255,255,0,0,0,0,255,0,255,255,0,0,255,0,255,255,255,0,255,0,0,0],
+b: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,255,255,0,0,0,0,255,0,255,255,0,255,255,0,0,255,255,255,0,255,255,0,255,0,0,0,0,255,0,0,0,255,255,255,255,0,0,0,0,0,255,255,255,255,255,255,0,0,255,0,255,255,255,255,0,255,0,255,0,255,0,255,255,255,255,0,255,255,255,0,0,0,0,255,0,255,255,0,0,255,0,255,255,255,0,255,0,0,0],
+},
+{
+r: [255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,0,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,0,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,0,255,0,255,255,0,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255],
+g: [255,0,255,0,0,182,182,191,255,182,182,0,0,255,0,182,0,182,0,182,0,255,191,0,182,182,255,255,0,0,182,0,255,182,0,0,0,0,0,0,0,0,182,0,0,182,182,255,0,0,0,255,0,0,255,255,182,191,0,182,182,0,0,191,0,0,182,0,0,0,0,0,182,182,0,182,182,182,182,182,0,0,182,255,191,255,0,0,0,0,182,255,182,182,255,0,255,191,255,0,0,0,0,0,182,0,0,255,191,182,0,182,0,191,255,0,182,0,182,255,255,0,0,255,0,0,182,0,0,182,0,0,182,0,0,0,255,0,0,0,182,0,0,0,182,0,182,191,255,0,0,0,0,0,182,182,255,182,182,0,0,0,0,0,191,0,0,0,0,0,182,0,0,182,0,255,0,0,182,0,0,182,0,182,182,182,182,0,0,0,255,0,182,0,182,182,0,182,255,255,0,0,0,0,0,0,255,0,255,182,182,255,0,182,0,0,255,0,255,182,0,255,255,0,0,191,255,255,191,255,255,0,255,0,0,0,191,182,0,182,0,255,255,255,191,0,0,191,182,0,255,255,255,255,182,182,0,0,255,0,255,255,255,255,0,182,0,255,0,255,0,255,255,255,255,182,255,191,191,0,191,182,0,191,0,191,255,0,182,255,0,255,255,255,0,255,182,0,0],
+b: [255,0,255,0,0,193,193,255,255,193,193,0,0,255,0,193,0,193,0,193,0,255,255,0,193,193,255,255,0,0,193,0,255,193,0,0,0,0,0,0,0,0,193,0,0,193,193,255,0,0,0,255,0,0,255,255,193,255,0,193,193,0,0,255,0,0,193,0,0,0,0,0,193,193,0,193,193,193,193,193,0,0,193,255,255,255,0,0,0,0,193,255,193,193,255,0,255,255,255,0,0,0,0,0,193,0,0,255,255,193,0,193,0,255,255,0,193,0,193,255,255,0,0,255,0,0,193,0,0,193,0,0,193,0,0,0,255,0,0,0,193,0,0,0,193,0,193,255,255,0,0,0,0,0,193,193,255,193,193,0,0,0,0,0,255,0,0,0,0,0,193,0,0,193,0,255,0,0,193,0,0,193,0,193,193,193,193,0,0,0,255,0,193,0,193,193,0,193,255,255,0,0,0,0,0,0,255,0,255,193,193,255,0,193,0,0,255,0,255,193,0,255,255,0,0,255,255,255,255,255,255,0,255,0,0,0,255,193,0,193,0,255,255,255,255,0,0,255,193,0,255,255,255,255,193,193,0,0,255,0,255,255,255,255,0,193,0,255,0,255,0,255,255,255,255,193,255,255,255,0,255,193,0,255,0,255,255,0,193,255,0,255,255,255,0,255,193,0,0],
+},
+{
+r: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,0,255,0,255,255,0,255,255,0,255,0,255,0,255,255,255,255,255,255,255,255,255,0,0,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,0,0,0,255,255,255,255,255,0,0,255,0,255,255,0,255,255,255,255,255,255,255,0,255,255,255,255,255,0,255,255,255,255,255,0,255,255,255],
+g: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,182,191,182,182,182,182,182,182,182,182,182,182,182,191,182,191,182,182,191,182,182,191,182,191,182,191,182,182,182,182,182,182,182,182,182,191,191,182,182,182,182,182,182,182,182,182,191,182,182,182,182,182,191,191,191,182,182,182,182,182,191,191,182,191,182,182,191,182,182,182,182,182,182,182,191,182,182,182,182,182,191,182,182,182,182,182,191,182,182,182],
+b: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,193,255,193,193,193,193,193,193,193,193,193,193,193,255,193,255,193,193,255,193,193,255,193,255,193,255,193,193,193,193,193,193,193,193,193,255,255,193,193,193,193,193,193,193,193,193,255,193,193,193,193,193,255,255,255,193,193,193,193,193,255,255,193,255,193,193,255,193,193,193,193,193,193,193,255,193,193,193,193,193,255,193,193,193,193,193,255,193,193,193],
+},
+{
+r: [255,255,255,255,255,139,139,255,255,255,255,255,255,255,255,255,255,255,255,139,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,139,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,0,255,255,139,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,139,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,139,255,255,255,255,255,255,255,255,255,255,255,255,255,255,139,255,255,255,255,255,255,255,255,139,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,0,139,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,139,139,255,255,255,255,255,255,255,255,255,139,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255],
+g: [255,255,255,255,255,0,0,165,255,0,0,255,255,255,255,0,255,0,255,0,255,255,165,255,0,0,255,255,255,255,0,255,255,0,255,255,255,255,255,255,255,255,0,255,255,0,0,255,255,255,255,255,255,255,255,255,0,0,255,0,0,255,255,0,255,255,0,255,255,255,255,255,0,0,255,0,0,0,0,0,255,255,0,255,165,255,255,255,255,255,0,255,0,0,255,255,255,165,255,255,255,255,255,255,0,255,255,255,0,0,255,0,255,0,255,255,0,255,0,255,255,255,255,255,255,255,0,255,255,0,255,255,0,255,255,255,255,255,255,255,0,255,255,255,0,255,0,165,255,255,255,255,255,255,0,0,255,0,0,255,255,255,255,255,0,255,255,255,255,255,0,255,255,0,255,255,255,255,0,255,255,0,255,0,0,0,0,255,255,255,255,255,0,255,0,0,255,0,255,255,255,255,255,255,255,255,255,255,255,0,0,255,255,0,255,255,255,255,255,0,255,255,255,255,255,165,255,255,0,255,255,255,255,255,255,255,0,0,255,0,255,255,255,255,165,255,255,0,0,255,255,255,255,255,0,0,255,255,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255,255,255,0,255,165,165,255,0,0,255,165,255,165,255,255,0,255,255,255,255,255,255,255,0,255,255],
+b: [255,0,255,0,0,0,0,0,255,0,0,0,0,255,0,0,0,0,0,0,0,255,0,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,255,0,0,0,0,0,255,0,0,255,0,255,0,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,0,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,0,255,0,0,255,0,0,0,0,255,0,255,0,0,255,255,0,0,0,255,255,0,255,255,0,255,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,0,255,255,255,255,0,0,0,0,255,0,255,255,255,255,0,0,0,255,0,255,0,255,255,255,255,0,255,0,0,0,0,0,0,0,0,0,255,0,0,255,0,255,255,255,0,255,0,0,0],
+},
+{
+r: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,139,255,255,255,255,139,255,139,139,255,139,255,255,0,139,139,255,255,139,255,255,255,255,0,255,255,139,255,255,255,139,139,139,255,0,255,255,255,255,139,139,139,139,139,255,255,255,139,255,139,255,255,255,255,139,255,139,255,255,0,139,255,139,139,0,139,139,139,255,255,255,255,255,255,139,139,255,255,255,255,139,139,139,255,255,255,255,255],
+g: [255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,0,165,0,0,0,0,0,0,0,0,0,0,0,165,0,0,0,0,165,0,0,165,0,165,0,0,0,0,0,0,0,0,0,0,0,165,0,0,0,0,0,0,0,0,0,0,165,0,0,0,0,0,165,165,165,0,0,0,0,0,165,0,0,165,0,0,0,0,0,0,0,0,0,0,165,0,0,0,0,0,165,0,0,0,0,0,165,0,0,0],
+b: [255,0,255,0,0,255,255,255,255,0,0,0,0,255,0,0,0,0,0,255,0,255,255,0,0,0,255,255,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,255,0,0,255,255,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,255,255,0,0,0,0,0,255,0,0,255,0,255,255,255,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,255,0,255,0,0,255,255,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,255,255,0,0,0,0,0,0,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,255,0,0,255,255,0,0,0,0,0,0,255,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+},
+]},
+Skin Reaction_tree: {
+x: [376.415,385.339,376.415,370.595,378.747,342.216,378.747,416.256,513.76,538.083,513.76,487.323,342.216,343.919,342.216,333.193,342.216,341.785,342.216,336.414,342.216,311.852,558.877,610.529,558.877,499.361,558.877,560.751,416.256,413.615,416.256,439.374,416.256,428.807,469.706,506.979,469.706,446.297,469.706,457.301,469.706,470.689,457.964,449.411,457.964,462.597,678.403,690.496,678.403,674.464,678.403,645.629,678.403,698.241,324.418,320.263,324.418,326.835,576.182,583.155,506.979,541.914,278.289,278.653,278.289,309.829,462.972,457.816,561.321,538.083,561.321,564.975,561.321,582.076,434.298,437.528,434.298,428.807,444.159,438.202,473.65,457.301,320.263,315.093,320.263,324.674,396.82,392.152,396.82,426.106,396.82,366.971,311.852,306.813,311.852,287.615,283.223,287.615,428.807,424.373,733.422,740.807,733.422,716.406,733.422,743.592,447.502,448.777,447.502,446.793,340.265,366.971,340.265,317.427,619.702,617.156,457.301,454.28,457.301,434.617,457.301,457.816,750.0,743.592,385.339,402.005,187.489,187.499,566.239,561.321,566.239,569.413,191.22,197.725,49.948,45.28,49.948,57.322,710.496,703.639,617.156,610.529,617.156,621.345,369.044,369.561,369.044,413.116,369.044,371.716,369.044,329.454,369.044,362.518,420.077,437.528,420.077,402.005,420.077,420.71,420.077,419.679,489.779,483.065,438.202,428.807,229.619,210.331,229.619,255.666,229.619,223.482,499.361,503.356,499.361,480.13,499.361,458.853,455.743,449.273,455.743,461.238,455.743,413.116,455.743,471.234,455.743,490.013,451.933,448.162,451.933,453.978,451.933,454.28,287.112,292.574,287.112,282.383,315.093,309.829,610.529,640.853,733.226,728.804,668.556,689.764,668.556,640.853,668.556,673.64,439.374,449.89,439.374,459.959,285.027,277.859,285.027,298.954,689.764,703.639,689.764,694.84,437.528,449.273,449.89,459.474,459.474,465.334,253.323,255.666,447.225,451.522,223.482,220.287,84.354,107.377,363.311,369.044,716.406,715.052,716.406,698.241,545.876,541.914,424.373,420.439,413.116,413.125,413.116,415.246,484.23,473.65,484.23,489.753,582.076,597.894,0.0,6.463,611.927,577.397,611.927,645.629,134.167,107.377,426.106,458.853,487.323,458.853,458.853,421.872,459.959,480.13,103.261,107.377,103.288,107.377,309.829,282.222,269.315,265.287,269.315,275.449,449.273,458.817,428.229,434.617,702.036,690.496,582.352,586.07,582.352,577.397,541.914,577.397,298.954,293.791,298.954,317.427,434.617,420.856,434.617,430.592,271.797,264.138,271.797,287.615,458.817,465.269,483.065,471.234,282.222,275.449,282.222,256.812,421.872,413.189,421.872,377.189,421.872,426.784,19.647,6.463,19.647,36.278,419.019,421.872,454.148,458.853,88.059,91.542,95.964,91.542,564.285,576.182,564.285,543.414,564.285,572.756,112.979,107.377,36.278,57.322,645.629,641.959,645.629,644.283,1.375,6.463,87.918,91.542,87.918,84.354,461.238,464.248,461.238,467.342,402.073,406.751,402.073,424.007,402.073,377.189,242.969,245.836,436.309,435.808,436.309,436.509,279.171,278.653,279.171,279.529,292.574,259.834,292.574,329.454,95.414,99.905,95.414,94.005,95.414,91.542,99.65,101.907,99.65,93.145,99.65,96.083,99.65,107.377,359.097,362.518,255.666,283.969,453.939,454.28,420.856,414.384,395.814,394.086,554.531,558.877,446.297,424.007,409.948,406.751,446.793,446.296,287.615,281.762,552.521,558.877,640.853,644.074,640.853,645.973,220.8,213.316,220.8,235.634,548.88,552.521,220.855,225.954,210.331,197.725,283.969,309.829,462.431,458.817,245.836,278.289,245.836,215.871,414.224,413.939,451.522,457.301,458.262,461.238,235.634,230.084,235.634,256.812,109.042,107.377,81.777,84.354,57.322,84.354,215.871,187.499,186.606,192.927,225.954,234.8,234.8,246.353,394.086,396.82,394.086,389.842,448.777,452.993,448.777,454.148,377.189,309.829,746.812,740.807,280.465,281.776,665.124,658.518,470.689,469.845,470.689,476.098,187.499,160.184,404.392,413.189,257.979,259.834,376.394,370.499,376.394,385.339,337.991,340.265,324.459,329.454,334.265,340.265,568.521,565.288,203.748,192.927,203.748,218.356,436.509,421.872,712.556,721.638,712.556,702.036,728.804,721.638,597.894,609.376,635.767,610.529,635.767,658.518,609.376,615.927,413.939,413.189,398.812,404.392,572.756,578.076,278.66,276.399,278.66,282.383,328.363,333.193,446.29,450.487,450.487,455.743,456.906,457.816,246.353,259.834,218.356,237.468,237.468,259.834,237.468,232.366,281.776,282.222,417.673,417.389,487.012,483.923,160.184,134.167,376.101,377.189,683.116,675.267,483.923,480.13,663.651,658.518,569.425,558.877,569.425,575.392,524.019,519.006,449.834,449.89,713.528,715.052,543.414,519.006,490.013,519.006,419.881,419.053,645.899,644.074,161.359,160.184,660.112,658.518,163.006,161.359,658.518,675.267,565.288,558.877,697.513,698.241,417.389,419.053,417.389,415.246,740.807,741.454,449.411,436.509],
+y: [158.11,153.171,158.11,160.747,254.675,256.286,254.675,252.196,457.846,466.977,457.846,447.187,256.286,260.828,256.286,264.795,256.286,251.326,256.286,255.555,256.286,251.548,367.542,355.913,367.542,385.49,367.542,372.383,252.196,255.276,252.196,284.212,252.196,220.07,664.327,663.843,664.327,632.574,664.327,697.946,664.327,657.553,525.858,517.663,525.858,530.481,658.725,644.685,658.725,660.071,658.725,661.581,658.725,670.851,577.947,567.116,577.947,583.815,50.358,51.144,663.843,663.921,568.334,582.517,568.334,539.649,705.935,704.554,475.17,466.977,475.17,472.064,475.17,477.824,187.347,153.979,187.347,220.07,217.523,218.701,706.49,697.946,567.116,554.076,567.116,569.29,396.007,395.866,396.007,415.692,396.007,386.408,251.548,249.682,251.548,246.907,242.652,246.907,220.07,216.121,695.856,707.379,695.856,684.745,695.856,694.406,407.118,417.836,407.118,398.59,379.033,386.408,379.033,375.034,348.32,352.791,697.946,724.77,697.946,707.437,697.946,704.554,693.618,694.406,153.171,154.424,608.126,604.201,482.441,475.17,482.441,487.168,456.981,460.401,660.842,664.222,660.842,656.673,302.656,305.534,352.791,355.913,352.791,355.654,48.236,52.962,48.236,57.17,48.236,43.98,48.236,47.208,48.236,38.841,156.489,153.979,156.489,154.424,156.489,161.235,156.489,152.578,89.611,87.909,218.701,220.07,475.246,466.878,475.246,491.893,475.246,467.409,385.49,383.374,385.49,350.408,385.49,435.112,80.173,118.181,80.173,69.56,80.173,57.17,80.173,84.806,80.173,69.066,743.15,749.454,743.15,750.0,743.15,724.77,35.466,46.691,35.466,24.885,554.076,539.649,355.913,333.793,602.725,606.717,320.822,311.367,320.822,333.793,320.822,317.855,284.212,284.037,284.212,316.912,373.28,372.896,373.28,374.055,311.367,305.534,311.367,308.576,153.979,118.181,284.037,281.262,281.262,279.938,487.034,491.893,687.926,691.659,467.409,462.213,658.928,640.677,49.108,48.236,684.745,691.856,684.745,670.851,665.849,663.921,216.121,213.197,57.17,53.336,57.17,36.79,713.67,706.49,713.67,717.802,477.824,480.437,648.365,646.758,663.211,663.923,663.211,661.581,628.373,640.677,415.692,435.112,447.187,435.112,435.112,489.06,316.912,350.408,644.38,640.677,638.048,640.677,539.649,534.421,520.561,516.517,520.561,526.837,118.181,122.181,705.755,707.437,632.415,644.685,667.927,671.306,667.927,663.923,663.921,663.923,374.055,374.055,374.055,375.034,707.437,715.153,707.437,711.731,244.156,242.866,244.156,246.907,122.181,121.892,87.909,84.806,534.421,526.837,534.421,534.933,489.06,482.328,489.06,531.861,489.06,490.797,649.374,646.758,649.374,652.465,493.66,489.06,427.487,435.112,704.177,699.938,703.031,699.938,48.194,50.358,48.194,53.689,48.194,40.695,641.66,640.677,652.465,656.673,661.581,658.782,661.581,666.238,642.754,646.758,680.667,699.938,680.667,658.928,69.56,63.131,69.56,67.862,568.599,575.095,568.599,601.308,568.599,531.861,587.648,583.283,515.599,521.235,515.599,507.03,593.468,582.517,593.468,599.736,46.691,52.921,46.691,47.208,715.788,721.127,715.788,722.364,715.788,699.938,626.317,620.628,626.317,624.201,626.317,619.636,626.317,640.677,33.636,38.841,491.893,513.604,730.506,724.77,715.153,719.086,377.932,383.898,370.981,367.542,632.574,601.308,579.464,575.095,398.59,393.161,246.907,249.108,361.106,367.542,333.793,323.755,333.793,332.834,533.43,532.983,533.43,534.326,356.808,361.106,90.236,85.993,466.878,460.401,513.604,539.649,126.845,122.181,583.283,568.334,583.283,594.778,469.771,474.88,691.659,697.946,64.69,69.56,534.326,535.064,534.326,534.933,647.053,640.677,662.502,658.928,656.673,658.928,594.778,604.201,38.597,39.845,85.993,78.184,78.184,67.137,383.898,396.007,383.898,379.106,417.836,416.599,417.836,427.487,531.861,539.649,710.696,707.379,545.061,540.43,376.85,374.553,657.553,652.855,657.553,656.199,604.201,615.825,480.881,482.328,56.573,52.921,147.747,145.127,147.747,153.171,374.377,379.033,46.218,47.208,378.024,379.033,354.124,359.249,41.977,39.845,41.977,44.917,507.03,489.06,621.948,613.32,621.948,632.415,606.717,613.32,480.437,482.412,366.317,355.913,366.317,374.553,482.412,483.543,474.88,482.328,479.229,480.881,40.695,36.667,16.299,10.989,16.299,24.885,269.331,264.795,86.843,84.021,84.021,80.173,709.777,704.554,67.137,52.921,44.917,48.479,48.479,52.921,48.479,47.845,540.43,534.421,14.578,19.381,340.854,344.934,615.825,628.373,536.138,531.861,380.524,378.62,344.934,350.408,371.52,374.553,372.886,367.542,372.886,375.042,58.19,60.392,280.267,284.037,696.994,691.856,53.689,60.392,69.066,60.392,0.0,6.543,318.002,323.755,621.497,615.825,380.106,374.553,626.114,621.497,374.553,378.62,359.249,367.542,674.77,670.851,19.381,6.543,19.381,36.79,707.379,713.575,517.663,507.03],
+z: [375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0,375.0],
+},
+};
+
+    </script>
+    
+    <script>
+
+      //status on whether to show or not the background canvas
+      let FullMolinBkg = false;
+
+      class Faerun {
+        constructor() {
+          this.body = document.getElementsByTagName('body')[0];
+
+          this.selectedItems = [];
+          this.selectedIndicators = [];
+          this.selectedCurrent = [];
+          this.scatterMeta = [{"categorical": [true, true, true, true, true, true, true, true, true], "fog_intensity": 0.0, "has_legend": true, "interactive": true, "is_range": [false, false, false, false, false, false, false, false, false], "label_index": [0, 0, 0, 0, 0, 0, 0, 0, 0], "legend": [[[[0.0, 1.0, 1.0, 1.0], "1973"], [[0.0196078431372549, 0.9803921568627451, 1.0, 1.0], "1974"], [[0.0392156862745098, 0.9607843137254902, 1.0, 1.0], "1975"], [[0.058823529411764705, 0.9411764705882353, 1.0, 1.0], "1976"], [[0.0784313725490196, 0.9215686274509804, 1.0, 1.0], "1977"], [[0.10196078431372549, 0.8980392156862745, 1.0, 1.0], "1978"], [[0.12156862745098039, 0.8784313725490196, 1.0, 1.0], "1979"], [[0.1411764705882353, 0.8588235294117648, 1.0, 1.0], "1980"], [[0.16078431372549018, 0.8392156862745098, 1.0, 1.0], "1981"], [[0.1843137254901961, 0.8156862745098039, 1.0, 1.0], "1982"], [[0.22352941176470587, 0.7764705882352941, 1.0, 1.0], "1984"], [[0.24313725490196078, 0.7568627450980392, 1.0, 1.0], "1985"], [[0.2627450980392157, 0.7372549019607844, 1.0, 1.0], "1986"], [[0.3058823529411765, 0.6941176470588235, 1.0, 1.0], "1988"], [[0.3254901960784314, 0.6745098039215687, 1.0, 1.0], "1989"], [[0.34509803921568627, 0.6549019607843137, 1.0, 1.0], "1990"], [[0.3686274509803922, 0.6313725490196078, 1.0, 1.0], "1991"], [[0.40784313725490196, 0.592156862745098, 1.0, 1.0], "1993"], [[0.42745098039215684, 0.5725490196078431, 1.0, 1.0], "1994"], [[0.44705882352941173, 0.5529411764705883, 1.0, 1.0], "1995"], [[0.47058823529411764, 0.5294117647058824, 1.0, 1.0], "1996"], [[0.49019607843137253, 0.5098039215686274, 1.0, 1.0], "1997"], [[0.5098039215686274, 0.4901960784313726, 1.0, 1.0], "1998"], [[0.5294117647058824, 0.47058823529411764, 1.0, 1.0], "1999"], [[0.5529411764705883, 0.44705882352941173, 1.0, 1.0], "2000"], [[0.5725490196078431, 0.4274509803921569, 1.0, 1.0], "2001"], [[0.592156862745098, 0.40784313725490196, 1.0, 1.0], "2002"], [[0.611764705882353, 0.388235294117647, 1.0, 1.0], "2003"], [[0.6313725490196078, 0.3686274509803922, 1.0, 1.0], "2004"], [[0.6549019607843137, 0.34509803921568627, 1.0, 1.0], "2005"], [[0.6745098039215687, 0.3254901960784313, 1.0, 1.0], "2006"], [[0.6941176470588235, 0.3058823529411765, 1.0, 1.0], "2007"], [[0.7137254901960784, 0.28627450980392155, 1.0, 1.0], "2008"], [[0.7372549019607844, 0.26274509803921564, 1.0, 1.0], "2009"], [[0.7568627450980392, 0.2431372549019608, 1.0, 1.0], "2010"], [[0.7764705882352941, 0.22352941176470587, 1.0, 1.0], "2011"], [[0.8392156862745098, 0.16078431372549018, 1.0, 1.0], "2014"], [[0.8784313725490196, 0.1215686274509804, 1.0, 1.0], "2016"], [[0.9607843137254902, 0.039215686274509776, 1.0, 1.0], "2020"], [[0.9803921568627451, 0.019607843137254943, 1.0, 1.0], "2021"]], [[[0.0, 1.0, 1.0, 1.0], "1973"], [[0.0, 0.0, 0.0, 0.0], "1974"], [[0.0, 0.0, 0.0, 0.0], "1975"], [[0.0, 0.0, 0.0, 0.0], "1976"], [[0.0, 0.0, 0.0, 0.0], "1977"], [[0.0, 0.0, 0.0, 0.0], "1978"], [[0.0, 0.0, 0.0, 0.0], "1979"], [[0.0, 0.0, 0.0, 0.0], "1980"], [[0.0, 0.0, 0.0, 0.0], "1981"], [[0.0, 0.0, 0.0, 0.0], "1982"], [[0.0, 0.0, 0.0, 0.0], "1984"], [[0.0, 0.0, 0.0, 0.0], "1985"], [[0.0, 0.0, 0.0, 0.0], "1986"], [[0.0, 0.0, 0.0, 0.0], "1988"], [[0.0, 0.0, 0.0, 0.0], "1989"], [[0.0, 0.0, 0.0, 0.0], "1990"], [[0.0, 0.0, 0.0, 0.0], "1991"], [[0.0, 0.0, 0.0, 0.0], "1993"], [[0.0, 0.0, 0.0, 0.0], "1994"], [[0.0, 0.0, 0.0, 0.0], "1995"], [[0.0, 0.0, 0.0, 0.0], "1996"], [[0.0, 0.0, 0.0, 0.0], "1997"], [[0.0, 0.0, 0.0, 0.0], "1998"], [[0.0, 0.0, 0.0, 0.0], "1999"], [[0.0, 0.0, 0.0, 0.0], "2000"], [[0.0, 0.0, 0.0, 0.0], "2001"], [[0.0, 0.0, 0.0, 0.0], "2002"], [[0.0, 0.0, 0.0, 0.0], "2003"], [[0.0, 0.0, 0.0, 0.0], "2004"], [[0.0, 0.0, 0.0, 0.0], "2005"], [[0.0, 0.0, 0.0, 0.0], "2006"], [[0.0, 0.0, 0.0, 0.0], "2007"], [[0.0, 0.0, 0.0, 0.0], "2008"], [[0.0, 0.0, 0.0, 0.0], "2009"], [[0.0, 0.0, 0.0, 0.0], "2010"], [[0.0, 0.0, 0.0, 0.0], "2011"], [[0.0, 0.0, 0.0, 0.0], "2014"], [[0.8784313725490196, 0.1215686274509804, 1.0, 1.0], "2016"], [[0.9607843137254902, 0.039215686274509776, 1.0, 1.0], "2020"], [[0.9803921568627451, 0.019607843137254943, 1.0, 1.0], "2021"]], [[[1.0, 1.0, 1.0, 1.0], "Non-toxic"], [[1.0, 0.0, 0.0, 1.0], "Toxic"]], [[[1.0, 1.0, 1.0, 1.0], "Non-toxic"], [[1.0, 0.0, 0.0, 1.0], "Toxic"]], [[[1.0, 1.0, 1.0, 1.0], "Non-toxic"], [[1.0, 0.0, 0.0, 1.0], "Toxic"]], [[[1.0, 1.0, 1.0, 1.0], "Train (Non-toxic)"], [[1.0, 0.0, 0.0, 1.0], "Train (Toxic)"], [[0.0, 0.7490196078431373, 1.0, 1.0], "Pred (Non-toxic)"], [[1.0, 0.7137254901960784, 0.7568627450980392, 1.0], "Pred (Toxic)"]], [[[1.0, 1.0, 1.0, 1.0], "Train (Non-toxic)"], [[1.0, 0.0, 0.0, 1.0], "Train (Toxic)"], [[0.0, 0.7490196078431373, 1.0, 1.0], "Pred (Non-toxic)"], [[1.0, 0.7137254901960784, 0.7568627450980392, 1.0], "Pred (Toxic)"]], [[[1.0, 1.0, 1.0, 1.0], "Train (Non-toxic)"], [[1.0, 1.0, 0.0, 1.0], "Train (Toxic)"], [[1.0, 0.6470588235294118, 0.0, 1.0], "True Negative"], [[1.0, 0.0, 0.0, 1.0], "True Positive"], [[0.5450980392156862, 0.0, 0.0, 1.0], "False Positive"], [[0.0, 0.0, 0.0, 1.0], "False Negative"]], [[[1.0, 1.0, 1.0, 1.0], "Train (Non-toxic)"], [[1.0, 1.0, 0.0, 1.0], "Train (Toxic)"], [[1.0, 0.6470588235294118, 0.0, 1.0], "True Negative"], [[1.0, 0.0, 0.0, 1.0], "True Positive"], [[0.5450980392156862, 0.0, 0.0, 1.0], "False Positive"], [[0.0, 0.0, 0.0, 1.0], "False Negative"]]], "legend_title": ["Skin Reaction", "Skin Reaction", "Skin Reaction", "Skin Reaction", "Skin Reaction", "Skin Reaction", "Skin Reaction", "Skin Reaction", "Skin Reaction"], "mapping": {"c": "c", "cs": "cs", "knn": "knn", "labels": "labels", "s": "s", "x": "x", "y": "y", "z": "z"}, "max_c": [2021.0, 2021.0, 1.0, 1.0, 1.0, 3.0, 3.0, 5.0, 5.0], "max_legend_label": ["2021.00", "2021.00", "1.00", "1.00", "1.00", "3.00", "3.00", "5.00", "5.00"], "max_point_size": 20, "min_c": [1973.0, 1973.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "min_legend_label": ["1973.00", "1973.00", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00", "0.00"], "name": "Skin Reaction", "ondblclick": [null, null, null, null, null, null, null, null, null], "point_scale": 2.5, "selected_labels": [null, null, null, null, null, null, null, null, null], "series_title": ["Year (Full)", "Year (Binned)", "Original Y", "True Y (Random Split)", "True Y (Time Split)", "Predicted Y (Random)", "Predicted Y (Time Split)", "Result (Random)", "Result (Time-based)"], "shader": "smoothCircle", "title_index": [0, 0, 0, 0, 0, 0, 0, 0, 0]}];
+          this.treeMeta = [{"color": "#666666", "fog_intensity": 0.0, "mapping": {"c": "c", "from": "from", "to": "to", "x": "x", "y": "y", "z": "z"}, "name": "Skin Reaction_tree", "point_helper": "Skin Reaction"}];
+          this.seriesState = {};
+          this.el = {};
+
+          this.currentPoint = null;
+
+          this.lore = null;
+          this.clearColorHex = '#111111';
+          this.clearColor = null;
+          this.view = 'front';
+          this.antiAliasing = true;
+          this.alphaBlending = false;
+          this.thumbnailWidth = 250;
+          this.thumbnailFixed = false;
+
+          this.treeHelpers = [];
+          this.pointHelpers = [];
+          this.octreeHelpers = [];
+          this.coordinatesHelper = null;
+
+          this.ohIndexToPhName = [];
+          this.ohIndexToPhIndex = [];
+          this.phIndexMap = {};
+          this.ohIndexMap = {};
+
+          this.min = [Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE];
+          this.max = [-Number.MAX_VALUE, -Number.MAX_VALUE, -Number.MAX_VALUE];
+          this.maxRadius = -Number.MAX_VALUE;
+
+          this.coords = {
+            show: false,
+            grid: false,
+            ticks: true,
+            tickCount: 10,
+            tickLength: 2.0,
+            color: '#888888',
+            box: false,
+            offset: 5.0
+          };
+
+          this.legend = {
+            show: true,
+            title: 'Legend'
+          };
+
+          
+          this.sdMolOpts = {
+            width: this.thumbnailWidth / window.devicePixelRatio,
+            height: this.thumbnailWidth / window.devicePixelRatio,
+            experimental: true
+          }
+
+          this.sdSelected = new SmiDrawer(this.sdMolOpts);
+
+          if (this.thumbnailFixed) {
+            this.sdMolOpts = {
+              scale: 0.75,
+              experimental: true
+            }
+          }
+
+          this.sd = new SmiDrawer(this.sdMolOpts);
+
+          this.el = Faerun.bindElements();
+
+          this.scatterMeta.forEach(s => {
+            this.seriesState[s.name] = 0;
+          });
+
+          this.clearColor = Lore.Core.Color.fromHex(this.clearColorHex);
+          this.alphaBlending = (this.view === 'free' ? false : true) || this.alphaBlending;
+
+          this.initLore();
+          this.initTreeHelpers();
+          this.initPointHelpers();
+          this.initCoords();
+          this.initAxes();
+          this.initView();
+          this.initEvents();
+          this.renderLegend();
+        }
+
+        initLore() {
+          this.lore = Lore.init('lore', {
+            antialiasing: this.antiAliasing,
+            clearColor: this.clearColorHex,
+            alphaBlending: this.alphaBlending,
+            preserveDrawingBuffer: true
+          });
+        }
+
+        initTreeHelpers() {
+          this.treeMeta.forEach(t => {
+            let th = new Lore.Helpers.TreeHelper(this.lore, t.name, 'tree');
+            th.setXYZHexS(data[t.name].x, data[t.name].y, data[t.name].z, t.color);
+            th.setFog([this.clearColor.components[0], this.clearColor.components[1], 
+                       this.clearColor.components[2], this.clearColor.components[3]],
+                      t.fog_intensity);
+            this.treeHelpers.push(th);
+          });
+        }
+
+        initPointHelpers() {
+          this.scatterMeta.forEach(s => {           
+            let ph = new Lore.Helpers.PointHelper(
+              this.lore, s.name, s.shader, { maxPointSize: s.max_point_size }
+            );
+
+            ph.setXYZRGBS(data[s.name].x, data[s.name].y, data[s.name].z, 
+                          data[s.name]['colors'][0].r, data[s.name]['colors'][0].g, 
+                          data[s.name]['colors'][0].b, data[s.name]['s'] ? data[s.name]['s'][0] : 1.0);
+
+            ph.setPointScale(s.point_scale);
+            ph.setFog([this.clearColor.components[0], this.clearColor.components[1],
+                       this.clearColor.components[2], this.clearColor.components[3]],
+                      s.fog_intensity)
+
+            this.phIndexMap[s.name] = this.pointHelpers.length;
+            this.pointHelpers.push(ph);
+
+            this.min[0] = Faerun.getMin(data[s.name].x, this.min[0]);
+            this.min[1] = Faerun.getMin(data[s.name].y, this.min[1]);
+            this.min[2] = Faerun.getMin(data[s.name].z, this.min[2]);
+            this.max[0] = Faerun.getMax(data[s.name].x, this.max[0]);
+            this.max[1] = Faerun.getMax(data[s.name].y, this.max[1]);
+            this.max[2] = Faerun.getMax(data[s.name].z, this.max[2]);
+            this.maxRadius = ph.getMaxRadius();
+    
+            if (s.interactive && data[s.name].labels) {
+              this.octreeHelpers.push(
+                new Lore.Helpers.OctreeHelper(this.lore, 'Octree_' + s.name, 'tree', ph)
+              );
+
+              this.ohIndexMap[s.name] = this.octreeHelpers.length - 1;
+              this.ohIndexToPhName.push(s.name);
+              this.ohIndexToPhIndex.push(this.phIndexMap[s.name]);
+            }
+          });
+        }
+
+        initCoords() {
+          if (!this.coords.show) return;
+
+          let min = [0, 0, 0];
+          let max = [0, 0, 0];
+
+          for (var i = 0; i < 3; i++) {
+            min[i] = this.min[i] - this.coords.offset;
+            max[i] = this.max[i] + this.coords.offset;
+          }
+
+          this.coordinatesHelper = new Lore.Helpers.CoordinatesHelper(this.lore, 'Coordinates', 'coordinates', {
+            position: new Lore.Math.Vector3f(min[0], min[1], min[2]),
+            axis: {
+              x: {
+                length: max[0] - min[0],
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              y: {
+                length: max[1] - min[1],
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              z: {
+                length: max[2] - min[2],
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              }
+            },
+            ticks: {
+              enabled: this.coords.ticks,
+              x: {
+                length: this.coords.tickLength,
+                color: Lore.Core.Color.fromHex(this.coords.color),
+                count: this.coords.tickCount
+              },
+              y: {
+                length: this.coords.tickLength,
+                color: Lore.Core.Color.fromHex(this.coords.color),
+                count: this.coords.tickCount
+              },
+              z: {
+                length: this.coords.tickLength,
+                color: Lore.Core.Color.fromHex(this.coords.color),
+                count: this.coords.tickCount
+              }
+            },
+            box: {
+              enabled: this.coords.box,
+              x: {
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              y: {
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              },
+              z: {
+                color: Lore.Core.Color.fromHex(this.coords.color)
+              }
+            }
+          });
+        }
+
+        initAxes() {
+          // Wait for DOM to get ready
+          setTimeout(() => {
+            this.updateTitle(true);
+            this.updateXAxis(true);
+            this.updateYAxis(true);
+          }, 500);
+        }
+
+        initView() {
+          let center = new Lore.Math.Vector3f(
+              (this.max[0] + this.min[0]) / 2.0, 
+              (this.max[1] + this.min[1]) / 2.0, 
+              (this.max[2] + this.min[2]) / 2.0
+            );
+          this.lore.controls.setLookAt(center);
+          this.lore.controls.setRadius(this.maxRadius + 100);
+          this.lore.controls.setView(0.9, -0.5)
+          this.lore.controls.setViewByName(this.view);
+        }
+
+        initEvents() {
+          this.lore.controls.addEventListener('updated', () => {
+            // Update the position / content of the annotations every time
+            // the view changes
+            this.updateTitle();
+            this.updateYAxis();
+            this.updateXAxis();
+            this.updateSelectedIndicators();
+          });
+
+          Lore.Helpers.OctreeHelper.joinHoveredChanged(this.octreeHelpers, e => {
+            let phName = this.ohIndexToPhName[e.source];
+            if (e.e && data[phName].labels) {
+              let fullLabel = data[phName].labels[e.e.index];
+              let labelIndex = this.scatterMeta[this.ohIndexToPhIndex[e.source]]
+                                  .label_index[this.seriesState[phName]];
+              let titleIndex = this.scatterMeta[this.ohIndexToPhIndex[e.source]]
+                                  .title_index[this.seriesState[phName]];
+
+              let rgbColor = this.pointHelpers[e.source].getColor(e.e.index);
+              let hexColor = Lore.Core.Color.rgbToHex(rgbColor[0], rgbColor[1], rgbColor[2]);
+
+              this.currentPoint = {
+                index: e.e.index,
+                fullLabel: fullLabel.split('__'),
+                source: phName,
+                label: fullLabel.split('__')[labelIndex],
+                color: hexColor,
+                labelIndex: labelIndex,
+                titleIndex: titleIndex
+              }
+              
+              if (FullMolinBkg == true) {
+
+                document.getElementById("overlay-structure-container").style.visibility = "visible";
+
+                var overlayStruc_Width = document.getElementById("overlay-structure-container").offsetWidth
+                var overlayStruc_Height = document.getElementById("overlay-structure-container").offsetHeight
+
+                if (overlayStruc_Width > overlayStruc_Height) {overlayStruc_Width = overlayStruc_Height}
+
+                this.sd = new SmiDrawer({
+                  width: overlayStruc_Width / window.devicePixelRatio,
+                  height: overlayStruc_Width / window.devicePixelRatio,
+                  bondThickness: 1.4,
+                  experimental: true
+                });
+
+                this.setTipContent();
+                this.sd = new SmiDrawer(this.sdMolOpts);
+              } else {
+
+                document.getElementById("overlay-structure-container").style.visibility = "hidden";
+                this.setTipContent__();
+
+                this.el.tip.classList.add('show');
+
+                let pointSize = this.pointHelpers[e.source].getPointSize() / window.devicePixelRatio;
+                let x = e.e.screenPosition[0];
+                let y = e.e.screenPosition[1];
+
+                this.el.hoverIndicator.style.width = pointSize + 'px';
+                this.el.hoverIndicator.style.height = pointSize + 'px';
+                this.el.hoverIndicator.style.left = (x - pointSize / 2.0 - 1) + 'px';
+                this.el.hoverIndicator.style.top = (y - pointSize / 2.0 - 1) + 'px';
+
+                this.el.hoverIndicator.classList.add('show');
+                }
+
+            } else {
+              this.currentPoint = null;
+              this.el.tip.classList.remove('show');
+              this.el.hoverIndicator.classList.remove('show');
+            }
+          });
+
+          Lore.Helpers.OctreeHelper.joinSelectedChanged(this.octreeHelpers, items => {
+            this.selectedItems = items;
+            this.updateSelected();
+          });
+
+          Lore.Helpers.OctreeHelper.joinReselected(this.octreeHelpers, item => {
+            this.updateSelected(
+              this.getSelectedIndex(item[0].source, item[0].item.e.index)
+            );
+          });
+
+          // Event listeners
+          this.el.selectedPrev.addEventListener('click', e => {
+            e.preventDefault();
+            this.updateSelected(this.selectedCurrent - 1);
+            return false;
+          });
+
+          this.el.selectedNext.addEventListener('click', e => {
+            e.preventDefault();
+            this.updateSelected(this.selectedCurrent + 1);
+            return false;
+          });
+
+          this.el.selectedRemove.addEventListener('click', e => {
+            e.preventDefault();
+            let item = this.selectedItems[this.selectedCurrent]
+            this.octreeHelpers[item.source].removeSelected(item.index);
+            return false;
+          });
+
+          document.addEventListener('dblclick', e => {
+            if (this.currentPoint) {
+              var index = this.currentPoint.index;
+              var labels = this.currentPoint.label.split('__');
+              var source = this.currentPoint.source;
+              eval(this.scatterMeta[this.phIndexMap[source]].ondblclick[this.seriesState[source]]);
+            }
+          });
+
+          document.addEventListener('mousemove', e => {
+            if (FullMolinBkg == false) {
+              document.getElementById("tip").style.visibility = "visible";
+
+              if (!this.thumbnailFixed) {
+                let x = e.clientX;
+                let y = e.clientY;
+
+                if (x > window.innerWidth - this.el.tip.offsetWidth - 20) {
+                  x -= this.el.tip.offsetWidth;
+                } else {
+                  x += 10;
+                }
+
+                if (y > window.innerHeight - this.el.tip.offsetHeight - 20) {
+                  y -= this.el.tip.offsetHeight;
+                } else {
+                  y += 10;
+                }
+
+                if (this.el.tip) {
+                  this.el.tip.style.top = y + 'px';
+                  this.el.tip.style.left = x + 'px';
+                }
+              }
+            } else {
+              document.getElementById("tip").style.visibility = "hidden";
+            }
+          });
+
+          this.el.selectedToggle.addEventListener('click', e => {
+            this.el.selectedContainer.classList.toggle('hide');
+            if (this.el.selectedContainer.classList.contains('hide'))
+              this.el.selectedToggle.innerHTML = '<i class="fas fa-toggle-off"></i>';
+            else
+              this.el.selectedToggle.innerHTML = '<i class="fas fa-toggle-on"></i>';
+            
+            e.preventDefault();
+            return false;
+          });
+
+          this.el.showControls.addEventListener('click', e => {
+            this.el.moreControls.classList.toggle('hide');
+            e.preventDefault();
+            return false;
+          });
+
+          this.el.search.addEventListener('click', e => {
+            let searchTerm = prompt('Please enter a search term:', '');
+            const results = this.search(searchTerm);
+
+            for (const [name, indices] of Object.entries(results)) {
+              if (!name in this.ohIndexMap) return;
+              indices.forEach(index => {
+                this.octreeHelpers[this.ohIndexMap[name]].addSelected(index);
+              });
+            }
+            
+            e.preventDefault();
+            return false;
+          });
+
+          window.addEventListener('keydown', e => {
+            if ((e.keyCode == 114) || (e.ctrlKey && e.keyCode == 70)) {
+              this.search();
+              e.preventDefault();
+              return false;
+            }
+          });
+
+          this.el.export.addEventListener('click', e => {
+            e.preventDefault();
+
+            let canvas = document.getElementById('lore');
+            let zoom = this.lore.controls.getZoom();
+
+            canvas.style.width = (canvas.width * 2) + 'px';
+            canvas.style.height = (canvas.height * 2) + 'px';
+            this.lore.controls.setZoom(zoom * 2);
+
+            setTimeout(() => {
+              let blob = this.lore.canvas.toBlob(blob => {
+                let a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.setAttribute('download', 'export.png');
+                a.click();
+                
+                setTimeout(() => {
+                  canvas.style.width = '100%';
+                  canvas.style.height = '100%';
+                  lore.controls.setZoom(zoom);
+                }, 2000);
+              });
+            }, 2000);
+          });
+
+          this.el.download.addEventListener('click', e => {
+            e.preventDefault();
+
+            let text = ''
+            this.selectedItems.forEach(item => {
+              let phIndex = this.ohIndexToPhIndex[item.source];
+              let meta = this.scatterMeta[phIndex];
+              let phName = this.ohIndexToPhName[item.source];
+              let seriesState = this.seriesState[phName];
+
+              let fullLabel = data[phName].labels[item.item.index].split('__');
+
+              let labelIndex = meta.label_index[seriesState];
+              let titleIndex = meta.title_index[seriesState];
+              let selectedLabels = meta.selected_labels[seriesState];
+
+              fullLabel.forEach((l, i) => {
+                text += l + ';'
+              });
+              text = text.slice(0, -1); 
+              text += '\n';
+            });
+
+            var a = document.createElement('a');
+            a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            a.setAttribute('download', 'faerun_list.csv');
+
+            a.style.display = 'none';
+            document.body.appendChild(a);
+
+            a.click();
+
+            document.body.removeChild(a);
+
+            return false;
+          });
+
+          this.el.largepreview.addEventListener('click', e => {
+            
+            //Switch display mode:
+            if (FullMolinBkg == false) {
+              FullMolinBkg = true;
+            } else {
+              FullMolinBkg = false;
+              //HIDE BIG CANVAS IN BACKGROUND:
+              document.getElementById("overlay-structure-container").style.visibility = "hidden";
+            }
+          });
+        }
+
+        setTipContent__() {
+          this.sd.draw(this.currentPoint.label, this.thumbnailFixed ? 'svg' : 'img', "light", element => {
+            this.el.tipText.innerHTML = '';
+            if (this.currentPoint.titleIndex !== this.currentPoint.labelIndex)
+              this.el.tipText.innerHTML = `${this.currentPoint.fullLabel[this.currentPoint.titleIndex]}<br />`;
+            this.el.tipText.appendChild(element);
+            this.el.tip.style.borderColor = this.currentPoint.color;
+            document.getElementById("tip").style.visibility = "visible";
+          });
+        }
+
+        setTipContent() {
+          this.sd.draw(this.currentPoint.label, "#overlay-structure", "dark");
+          document.getElementById("tip").style.visibility = "hidden";
+        }
+
+        setSelectedContent(fullLabel, labelIndex, selectedLabels, img) {
+          this.el.selectedContainer.innerHTML = '';
+          if (img)
+            this.el.selectedContainer.appendChild(img);
+
+          fullLabel.forEach((l, i) => {
+            if (i === labelIndex) return;
+            if (selectedLabels && selectedLabels[i]) {
+              this.el.selectedContainer.appendChild(
+                Faerun.createElement('div', { classes: 'label', content: selectedLabels[i] })
+              );
+            }
+            this.el.selectedContainer.appendChild(
+              Faerun.createElement('div', { classes: 'content', content: l })
+            );
+          });
+
+          // Update the indicator
+          this.updateSelectedIndicators();
+        }
+
+        renderLegend() {
+          if (!this.legend.show) return;
+
+          
+          let legend = document.getElementById('legend');
+          
+          if (legend) this.body.removeChild(legend);
+
+          legend = Faerun.createElement('div', { id: 'legend' });
+          this.body.appendChild(legend)
+          
+          if (this.legend.title && this.legend.title !== '')
+            legend.appendChild(Faerun.createElement('h2', { content: 'Legend' }));
+          
+          let container = Faerun.createElement('div', { classes: 'container' });
+          legend.appendChild(container);
+
+          this.scatterMeta.forEach(s => {
+            let index = this.seriesState[s.name];
+            if (s.has_legend) {
+              let legendSection = []
+              if (!s.is_range[index]) {
+                s.legend[index].forEach(v => {
+                  legendSection.push(Faerun.createElement('div', { classes: 'legend-element' }, [
+                    Faerun.createColorBox(v[0]),
+                    Faerun.createElement('div', { classes: 'legend-label', content: v[1] }),
+                  ]))
+                })
+              } else {
+                legendSection.push(Faerun.createElement('div', { classes: 'legend-element-range' }, [
+                  ...Faerun.createColorScale(s.legend[index]),
+                  Faerun.createElement('div', { 
+                    classes: 'legend-label max', 
+                    content: s.max_legend_label[index] 
+                  }),
+                  Faerun.createElement('div', {
+                    classes: 'legend-label min',
+                    content: s.min_legend_label[index] 
+                  })
+                ]))
+              }
+
+              let series = [];
+              for (var i = 0; i < s.series_title.length; i++) {
+                series.push(
+                  Faerun.createElement('option', { 
+                    value: i, 
+                    content: s.series_title[i], 
+                    selected: i === index
+                  })
+                );
+              }
+
+
+              let sectionHeader = Faerun.createElement(
+                'h3', { content: s.legend_title[index] }
+              );
+              sectionHeader.addEventListener('click', e => {
+                this.toggleLegendSection(s.name);
+              });
+
+              let seriesSelector = Faerun.createElement(
+                'select', 
+                { 
+                  id: `select-${s.name}`, 
+                  classes: 'series-selector',
+                  'data-name': s.name,
+                  hidden: s.series_title.length < 2,
+                }, 
+                [ ...series ]
+              );
+              seriesSelector.addEventListener('change', e => {
+                let value = document.getElementById(`select-${s.name}`).value;
+                this.changeSeries(value, s.name);
+              });
+
+
+              container.appendChild(
+                Faerun.createElement(
+                  'div', { id: `legend-${s.name}`, 
+                  classes: 'legend-section', 
+                  'data-name': `${s.name}` },
+                  [ sectionHeader, seriesSelector, ...legendSection ]
+                )
+              );
+            }
+          });
+        }
+
+        toggleLegendSection(name) {
+          let section = document.getElementById('legend-' + name);
+          let geometry = this.pointHelpers[this.phIndexMap[name]].geometry;
+          let isVisible = geometry.isVisible;
+
+          if (isVisible) {
+            geometry.hide();
+            section.style.opacity = 0.5;
+          } else {
+            geometry.show();
+            section.style.opacity = 1.0;
+          }
+        }
+
+        getSelectedIndex(source, index) {
+          let selectedIndex = null;
+          this.selectedItems.forEach((item, i) => {
+            if (item.source == source && item.item.index == index) {
+              selectedIndex = i;
+              return;
+            }
+          });
+          return selectedIndex;
+        }
+
+        updateSelected(current = -1) {
+          let n = this.selectedItems.length
+          // Hide the container if no items are selected
+          if (n === 0) {
+            this.el.selected.style.display = 'none';
+            return;
+          } else {
+            this.el.selected.style.display = 'block';
+          }
+
+          if (current < 0) current = n - 1;
+          if (current >= n) current = 0;
+          this.selectedCurrent = current;
+
+          let item = this.selectedItems[current];
+
+          let phIndex = this.ohIndexToPhIndex[item.source];
+          let meta = this.scatterMeta[phIndex];
+          let phName = this.ohIndexToPhName[item.source];
+          let seriesState = this.seriesState[phName];
+
+          let fullLabel = data[phName].labels[item.item.index].split('__');
+
+          let labelIndex = meta.label_index[seriesState];
+          let titleIndex = meta.title_index[seriesState];
+          let selectedLabels = meta.selected_labels[seriesState];
+
+          this.sdSelected.draw(fullLabel[labelIndex], 'img', 'dark', img => {
+            this.el.selectedCurrent.innerHTML = current + 1;
+            this.el.selectedTotal.innerHTML = n;
+            this.el.selectedTitle.innerHTML = fullLabel[titleIndex];
+
+            this.setSelectedContent(fullLabel, labelIndex, selectedLabels, img);
+          });
+
+          // Remove all indicators
+          this.selectedIndicators.forEach(indicator => {
+            indicator.element.parentElement.removeChild(indicator.element);
+          });
+          this.selectedIndicators.length = 0;
+
+          // Add the indicator for this object
+          let indicatorElement = Faerun.createElement(
+            'div', 
+            { classes: 'selected-indicator' },
+            [
+              Faerun.createElement('div', { classes: 'crosshair-x' }),
+              Faerun.createElement('div', { classes: 'crosshair-y' })
+            ]
+          );
+
+          this.body.appendChild(indicatorElement);
+          this.selectedIndicators.push({
+            element: indicatorElement,
+            index: item.item.index,
+            ohIndex: item.source,
+            phIndex: phIndex
+          });
+          this.updateSelectedIndicators();
+        }
+
+        updateSelectedIndicators() {
+          this.selectedIndicators.forEach(indicator => {
+            let pointSize = this.pointHelpers[indicator.phIndex].getPointSize();
+            let screenPosition = this.octreeHelpers[indicator.ohIndex]
+                                     .getScreenPosition(indicator.index);
+            
+            // Make the crosshairs larger than the point
+            pointSize = Faerun.getMax([pointSize / window.devicePixelRatio, 10 / window.devicePixelRatio]);
+            pointSize *= 1.25;
+            let halfPointSize = pointSize / 2.0;
+            indicator.element.style.left = (screenPosition[0] - halfPointSize) + 'px';
+            indicator.element.style.top = (screenPosition[1] - halfPointSize) + 'px';
+            indicator.element.style.width = pointSize + 'px';
+            indicator.element.style.height = pointSize + 'px';
+          });
+        }
+
+        updateTitle(first = false) {
+          if (this.el.title === undefined) return;
+
+          let bb = this.el.title.getBoundingClientRect();
+          let scenePosition = new Lore.Math.Vector3f(
+            (this.min[0] + this.min[0]) / 2.0, this.min[1], 
+            (this.min[2] + this.min[2]) / 2.0
+          );
+
+          let screenPosition = this.lore.controls.camera.sceneToScreen(scenePosition, this.lore);
+          
+          this.el.title.style.left = (screenPosition[0] - (bb.width / 2.0)) + 'px';
+          this.el.title.style.top = (screenPosition[1] - bb.height) + 'px';
+
+          if (first) this.el.title.classList.add('show');
+        }
+
+        updateXAxis(first = false) {
+          if (this.el.xAxis === undefined) return;
+          
+          let bb = this.el.xAxis.getBoundingClientRect();
+          let scenePosition = new Lore.Math.Vector3f(
+            (this.min[0] + this.min[0]) / 2.0, this.min[1], 
+            (this.min[2] + this.min[2]) / 2.0
+          );
+
+          let screenPosition = this.lore.controls.camera.sceneToScreen(scenePosition, this.lore);
+          
+          this.el.xAxis.style.left = (screenPosition[0] - (bb.width / 2.0)) + 'px';
+          this.el.xAxis.style.top = (screenPosition[1]) + 'px';
+
+          if (first) this.el.xAxis.classList.add('show');
+        }
+
+        updateYAxis(first = false) {
+          if (this.el.yAxis === undefined) return;
+            
+          let bb = this.el.yAxis.getBoundingClientRect();
+          let scenePosition = new Lore.Math.Vector3f(
+            this.min[0], (this.min[1] + this.min[1]) / 2.0, 
+            (this.min[2] + this.min[2]) / 2.0
+          );
+          
+          let screenPosition = this.lore.controls.camera.sceneToScreen(scenePosition, this.lore);
+          
+          this.el.yAxis.style.left = (screenPosition[0] - bb.height) + 'px';
+          this.el.yAxis.style.top = (screenPosition[1] - bb.width / 2.0) + 'px';
+
+          if (first) this.el.yAxis.classList.add('show');
+        }
+
+        changeSeries(value, name) {
+          value = parseInt(value);
+          this.seriesState[name] = value;
+          this.renderLegend();
+
+          this.pointHelpers[this.phIndexMap[name]].setRGBFromArrays(
+            data[name]['colors'][value].r, 
+            data[name]['colors'][value].g, 
+            data[name]['colors'][value].b
+          );
+
+          if (data[name]['s']) {
+            if (data[name]['s'][value]) {
+              this.pointHelpers[this.phIndexMap[name]].setSize(
+                data[name]['s'][value]
+              );
+            } else {
+              this.pointHelpers[this.phIndexMap[name]].setSize(1.0);
+            }
+          }
+        }
+
+        search(term) {
+          let results = {}
+          let re = new RegExp(term, 'i');
+
+          Object.keys(data).forEach(name => {
+            if (!('labels' in data[name])) return;
+            results[name] = []
+            data[name]['labels'].forEach((label, i) => {
+              if (re.test(label))
+                results[name].push(i)
+            });
+          });
+
+          return results;
+        }
+
+        static createColorBox(value) {
+          return Faerun.createElement(
+            'div', 
+            { 
+              classes: 'color-box', 
+              style: `background-color: rgba(${value[0] * 255}, ${value[1] * 255 }, ${value[2] * 255 }, ${value[3] });
+                      border-color: rgba(${value[0] * 255 }, ${value[1] * 255 }, ${value[2] * 255 }, ${value[3] })`
+            }
+          );
+        }
+
+        static createColorScale(values) {
+          let scale = [];
+
+          values.forEach(value => {
+            scale.push(
+              Faerun.createElement(
+                'div', 
+                { 
+                  classes: 'color-stripe', 
+                  style: `background-color: rgba(${value[0][0] * 255}, ${value[0][1] * 255}, ${value[0][2] * 255}, ${value[0][3]});
+                          border-color: rgba(${value[0][0] * 255}, ${value[0][1] * 255}, ${value[0][2] * 255}, ${value[0][3]})`,
+                  alt: value[1]
+                }
+              ),
+            )
+          });
+
+          return scale;
+        }
+        
+        static createElement(tag, values = {}, children = []) {
+          let element = document.createElement(tag);
+
+          for (const key of Object.keys(values)) {
+            if (key === 'classes')
+              element.classList.add(...values[key].split(' '));
+            else if (key === 'content')
+              element.innerHTML = values[key];
+            else if (key === 'hidden') {
+              if (values[key])
+                element.setAttribute('hidden', true);
+            }
+            else if (key === 'selected') {
+              if (values[key])
+                element.setAttribute('selected', true);
+            }
+            else
+              element.setAttribute(key, values[key]);
+          }
+
+          if (children) {
+            if (Array.isArray(children)) {
+              children.forEach(child => {
+                element.appendChild(child);
+              })
+            } else {
+              element.appendChild(children);
+            }
+          }
+
+          return element;
+        }
+
+        static bindElements() {
+          let result = {};
+          document.querySelectorAll('[data-bind]').forEach(e => {
+            result[e.getAttribute('data-bind')] = e;
+          });
+          return result;
+        }
+
+        static getMin(arr, other = Number.MAX_VALUE) {
+          let m = Number.MAX_VALUE;
+          for (var i = 0; i < arr.length; i++)
+              if (arr[i] < m) m = arr[i];
+          
+          if (m < other) return m;
+          return other;
+        }
+
+        static getMax(arr, other = -Number.MAX_VALUE) {
+          let m = -Number.MAX_VALUE;
+          for (var i = 0; i < arr.length; i++)
+              if (arr[i] > m) m = arr[i];
+          
+          if (m > other) return m;
+          return other;
+        }
+      }
+
+      let f = new Faerun();
+    </script>
+  </body>
+</html>
